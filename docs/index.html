@@ -44,7 +44,7 @@
     <p>You have 60 seconds to complete as many problems as you can.</p>
     <p>
       Problem: <span id="problem">Get Ready!</span><br>
-      Answer: <input type="text" id="answer">
+      Answer: <input type="number" pattern="[0-9]*" id="answer">
     </p>
     <p id="result"></p>
     <p>
@@ -56,7 +56,8 @@
 
     // Function to start the timer
     function startTimer() {
-            // Function to update the subtraction problem
+
+      // Function to update the subtraction problem
       function updateProblem() {
 
         // Generate two random numbers between 1 and 20
@@ -76,7 +77,6 @@
         // Update the subtraction problem on the page
         document.getElementById("problem").innerHTML = a + " - " + b;
         document.getElementById("answer").value = "";
-
       }
 
       // Function to check the users ansewr
@@ -103,7 +103,7 @@
       updateProblem();
       document.getElementById("startButton").style.display = "none";
 
-      // Set the time remaining to 60 seconds
+      // Set the time remaining to 120 seconds
       let time = 120;
 
       // Set a interval to update the timer every second
@@ -131,8 +131,8 @@
         }
       });
 
+      document.getElementById("answer").focus();
     }
-
     </script>
   </body>
 </html>

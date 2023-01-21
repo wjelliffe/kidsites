@@ -2,35 +2,115 @@
 <html>
 <head>
   <title>Kid Sites</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    /* Advanced CSS styles go here */
+    /* Reset CSS */
+    html {
+      height:100%;
+      background: url(images/bg.jpg) no-repeat center center fixed; 
+      -webkit-background-size: cover;
+      -moz-background-size: cover;
+      -o-background-size: cover;
+      background-size: cover;
+    }
+    body {
+      margin:0;
+      padding:20px;
+      position:absolute; top:0; bottom:0; right:0; left:0;
+      border: 12px solid #7FA4EF;
+      background: rgba(250, 247, 212, 0.2);
+    }
+    
+    /* Video styling for background video */
+    #myVideo {
+      height: 100vh;
+      width: 100vw;
+      object-fit: cover;
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      z-index: -1;
+    }
+    
+    /* Styling for main text block 
+    .main-page {
+      display: inline-block;
+      text-align: left;
+    }
+    */
+    
+    /* Big bold title */
+    h1 {
+      font-size: 3em;
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    /* Advanced CSS animations */
+
+    /* Animation classes */
+    .fade-in-bounce {
+      animation: fade-in 3s, bounce 3s;
+    }
+    
+    /* Fade-in animation */
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    
+    /* Bounce animation */
+    @keyframes bounce {
+      0% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-30px);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
+    
   </style>
 </head>
 <body>
-  <header>
-    <h1>Welcome to The Jelliffe Family Site</h1>
-  </header>
-  <nav>
-    <ul>
-      <li><a href="#math-test-site">Math Test Site</a></li>
-      <li><a href="#published-books">Published Books</a></li>
-    </ul>
-  </nav>
-  <main>
-    <section id="math-test-site">
-      <h2>Math Test Site</h2>
-      <p>Learn and practice math with our interactive tests.</p>
-      <a href="subtraction.html">Visit Site</a>
-    </section>
-    <section id="published-books">
-      <h2>Published Books</h2>
-      <ul>
-        <li><a href="kamp_k9.html">Kamp K9</a></li>
-      </ul>
-    </section>
-  </main>
-  <footer>
-    <p>Copyright &copy; <script>document.write( new Date().getUTCFullYear() );</script> wixthej</p>
-  </footer>
+  <video autoplay muted loop id="myVideo">
+    <source src="media/bluff_tide_video.mp4" type="video/mp4">
+    Your browser does not support HTML5 video.
+  </video>
+  <center>
+    <div class="main-page">
+      <header>
+        <h1 class="fade-in-bounce">Welcome to The<br>Jelliffe Family Site</h1>
+      </header>
+      <nav>
+          <p><a href="#math-test-site">Learning Math</a></p>
+          <p><a href="#published-books">Published Books</a></p>
+          <br>
+      </nav>
+      <main>
+        <section id="math-test-site">
+          <h2>Learning Math</h2>
+          <p>Learn and practice math with our interactive tools.</p>
+          <a href="subtraction.html">Subtraction Facts Practice</a>
+        </section>
+        <br>
+        <section id="published-books">
+          <h2>Published Books</h2>
+          <a href="kamp_k9.html">Kamp K9</a>
+        </section>
+      </main>
+      <footer>
+        <p>Copyright &copy; <script>document.write( new Date().getUTCFullYear() );</script> wixthej</p>
+      </footer>
+    </div>
+  </center>
 </body>
 </html>

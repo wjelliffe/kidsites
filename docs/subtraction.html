@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!-- HTML for the website -->
+<html>
+  <head>
+    <title>Subtraction Facts Practice</title>
+      <style>
+    body {
+      font-family: sans-serif;
+    }
+    .container {
+      width: 600px;
+      margin: 0 auto;
+    }
+    .problem {
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      padding: 8px 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: #0070c9;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #004d99;
+    }
+    .score {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+  </head>
+  <body>
+    <h1>Subtraction Facts Practice</h1>
+    <p>Enter the answer to each subtraction problem in the box below.</p>
+    <p>You have 60 seconds to complete as many problems as you can.</p>
+    <p>
+      Problem: <span id="problem">Get Ready!</span><br>
+      Answer: <input type="number" id="answer">
+    </p>
+    <p id="result"></p>
+    <p>
+      Time remaining: <span id="time">120</span> seconds
+    </p>
+    <button id="startButton" onclick="startTimer()">Start timer</button>
+    <script>
+    // JavaScript code for the website
+
+    // Function to start the timer
+    function startTimer() {
+
+      // Function to update the subtraction problem
+      function updateProblem() {
+
+        // Generate two random numbers between 1 and 20
+        let a = Math.floor(Math.random() * 20) + 1;
+        let b = Math.floor(Math.random() * 20) + 1;
+
+        // Make sure that a is greater than b
+        if (a < b) {
+          let temp = a;
+          a = b;
+          b = temp;
+        }
+
+        // Calculate the correct answer to the subtraction problem
+        let answer = a - b;
+
+        // Update the subtraction problem on the page
+        document.getElementById("problem").innerHTML = a + " - " + b;
+        document.getElementById("answer").value = "";
+      }
+
+      // Function to check the users ansewr
+      function checkAnswer() {
+
+        // Get the answer and check user's input against it.
+        let answer = eval(document.getElementById("problem").innerHTML);
+
+        // Get the user's answer from the text field
+        let userAnswer = document.getElementById("answer").value;
+
+        // Check if the user's answer is correct
+        if (userAnswer == answer) {
+          // If the answer is correct, increment the score
+          score++;
+          // Update the score on the page
+          document.getElementById("result").innerHTML = "Correct! Score: " + score;
+        } else {
+          // If the answer is incorrect, show an error message
+          document.getElementById("result").innerHTML = "Incorrect. Try again.";
+        }
+      }
+
+      updateProblem();
+      document.getElementById("startButton").style.display = "none";
+
+      // Set the time remaining to 120 seconds
+      let time = 120;
+
+      // Set a interval to update the timer every second
+      let interval = setInterval(function() {
+        // Decrement the time by 1
+        time--;
+
+        // Update the time remaining on the page
+        document.getElementById("time").innerHTML = time;
+
+        // If the time reaches 0, stop the timer
+        if (time == 0) {
+          clearInterval(interval);
+          document.getElementById("startButton").style.display = "block";
+        }
+      }, 1000);
+
+      // Set the initial score to 0
+      let score = 0;
+
+      document.getElementById("answer").addEventListener("keyup", function (e) {
+        if (e.keyCode === 13) {
+          checkAnswer();
+          updateProblem();
+        }
+      });
+
+      document.getElementById("answer").focus();
+    }
+    </script>
+  </body>
+</html>

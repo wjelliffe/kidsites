@@ -7,7 +7,6 @@
     /* Reset CSS */
     html {
       height:100%;
-      background: url(images/bg.jpg) no-repeat center center fixed; 
       -webkit-background-size: cover;
       -moz-background-size: cover;
       -o-background-size: cover;
@@ -81,7 +80,7 @@
   </style>
 </head>
 <body>
-  <video autoplay muted loop id="myVideo">
+  <video autoplay muted loop playsinline id="myVideo">
     <source src="media/cherry-blossoms.mp4" type="video/mp4">
     Your browser does not support HTML5 video.
   </video>
@@ -90,20 +89,18 @@
       <header>
         <h1 class="fade-in-bounce">Welcome to The<br>Jelliffe Family Site</h1>
       </header>
-      <nav>
-          <p><a href="#math-test-site">Learning Math</a></p>
-          <p><a href="#published-books">Published Books</a></p>
-          <br>
-      </nav>
       <main>
-        <section id="math-test-site">
+        <section id="education">
           <h2>Learning Math</h2>
           <p>Learn and practice math with our interactive tools.</p>
           <a href="subtraction.html">Subtraction Facts Practice</a>
+          <h2>Learn More!</h2>
+          <p>Below are other interesting articles that will help expand your brain</p>
+          <a href="giraffes.html">Giraffes</a>
         </section>
         <br>
         <section id="published-books">
-          <h2>Published Books</h2>
+          <h2>Books</h2>
           <a href="kamp_k9.html">Kamp K9</a>
         </section>
       </main>

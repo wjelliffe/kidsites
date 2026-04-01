@@ -36,9 +36,26 @@ issue_type = payload.get("issue_type", "user_story")
 checks = []
 
 checks.append({"name": "issue_type_identified", "pass": issue_type in {"epic", "user_story", "task", "bug"}})
-checks.append({"name": "problem_or_outcome_clear", "pass": present(payload.get("problem")) or present(payload.get("objective")) or present(payload.get("summary"))})
-checks.append({"name": "scope_bounded", "pass": present(payload.get("scope")) or issue_type == "bug"})
-checks.append({"name": "acceptance_sufficient", "pass": present(payload.get("acceptance_criteria"))})
+if issue_type == "bug":
+    checks.append({"name": "summary_clear", "pass": present(payload.get("problem")) or present(payload.get("summary"))})
+    checks.append({"name": "expected_result_present", "pass": present(payload.get("expected_result")) or present(payload.get("goal")) or present(payload.get("objective"))})
+    checks.append({"name": "actual_result_present", "pass": present(payload.get("actual_result")) or present(payload.get("problem"))})
+    checks.append({"name": "acceptance_sufficient", "pass": present(payload.get("acceptance_criteria"))})
+elif issue_type == "task":
+    checks.append({"name": "summary_clear", "pass": present(payload.get("problem")) or present(payload.get("summary"))})
+    checks.append({"name": "goal_present", "pass": present(payload.get("goal")) or present(payload.get("objective")) or present(payload.get("value"))})
+    checks.append({"name": "scope_bounded", "pass": present(payload.get("scope"))})
+    checks.append({"name": "acceptance_sufficient", "pass": present(payload.get("acceptance_criteria"))})
+elif issue_type == "user_story":
+    checks.append({"name": "user_story_present", "pass": present(payload.get("user_story")) or present(payload.get("problem")) or present(payload.get("summary"))})
+    checks.append({"name": "summary_clear", "pass": present(payload.get("problem")) or present(payload.get("summary"))})
+    checks.append({"name": "scope_bounded", "pass": present(payload.get("scope")) or present(payload.get("goal")) or present(payload.get("objective")) or present(payload.get("value"))})
+    checks.append({"name": "acceptance_sufficient", "pass": present(payload.get("acceptance_criteria"))})
+else:
+    checks.append({"name": "epic_present", "pass": present(payload.get("problem")) or present(payload.get("summary")) or present(payload.get("title"))})
+    checks.append({"name": "scope_present", "pass": present(payload.get("scope")) or present(payload.get("goal")) or present(payload.get("objective")) or present(payload.get("value"))})
+    checks.append({"name": "breakdown_present", "pass": present(payload.get("acceptance_criteria"))})
+    checks.append({"name": "success_criteria_present", "pass": present(payload.get("success_criteria")) or present(payload.get("acceptance_criteria"))})
 
 if present(payload.get("dependencies")):
     checks.append({"name": "dependencies_captured", "pass": True})

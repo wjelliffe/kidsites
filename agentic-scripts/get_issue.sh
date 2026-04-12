@@ -26,11 +26,13 @@ output_path="${tmp_dir}/issue-${issue_number}.json"
 mkdir -p "${tmp_dir}"
 
 raw_json="$(gh issue view "${issue_number}" --json number,title,body,url,state,labels,assignees,author)"
+repo_json="$(gh repo view --json nameWithOwner)"
 
-RAW_JSON="${raw_json}" ISSUE_NUMBER="${issue_number}" OUTPUT_PATH="${output_path}" python3 <<'PY'
+RAW_JSON="${raw_json}" REPO_JSON="${repo_json}" ISSUE_NUMBER="${issue_number}" OUTPUT_PATH="${output_path}" python3 <<'PY'
 import json
 import os
 import re
+import subprocess
 from datetime import datetime, timezone
 
 
@@ -73,6 +75,9 @@ def extract_bullets(text: str) -> list[str]:
 
 
 raw = json.loads(os.environ["RAW_JSON"])
+repo = json.loads(os.environ["REPO_JSON"])
+name_with_owner = repo.get("nameWithOwner", "")
+owner, repo_name = name_with_owner.split("/", 1)
 body = raw.get("body") or ""
 sections = parse_sections(body)
 acceptance_source = "\n".join(
@@ -81,6 +86,23 @@ acceptance_source = "\n".join(
     if sections.get(name)
 ).strip()
 acceptance = extract_checklist(acceptance_source) or extract_bullets(acceptance_source) or extract_checklist(body)
+
+
+def gh_api(path: str):
+    proc = subprocess.run(
+        ["gh", "api", path],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        if "404" in (proc.stderr or ""):
+            return None
+        raise SystemExit(proc.stderr.strip() or f"gh api failed for {path}")
+    return json.loads(proc.stdout)
+
+
+parent_issue = gh_api(f"repos/{owner}/{repo_name}/issues/{raw['number']}/parent")
+sub_issues = gh_api(f"repos/{owner}/{repo_name}/issues/{raw['number']}/sub_issues") or []
 
 normalized = {
     "issue_number": raw["number"],
@@ -97,6 +119,19 @@ normalized = {
     "risks": extract_bullets(sections.get("risks", "")) or extract_bullets(sections.get("edge-cases-risks", "")),
     "test_intent": extract_bullets(sections.get("test-intent", "")) or extract_bullets(sections.get("test-plan", "")),
     "implementation_hints": extract_bullets(sections.get("implementation-hints", "")),
+    "parent_issue": {
+        "number": parent_issue.get("number"),
+        "title": parent_issue.get("title"),
+        "url": parent_issue.get("html_url"),
+    } if isinstance(parent_issue, dict) else None,
+    "sub_issues": [
+        {
+            "number": item.get("number"),
+            "title": item.get("title"),
+            "url": item.get("html_url"),
+        }
+        for item in sub_issues
+    ],
     "sections": sections,
 }
 

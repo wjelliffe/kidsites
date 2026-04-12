@@ -33,6 +33,7 @@ with open(os.environ["INPUT_PATH"], "r", encoding="utf-8") as handle:
     payload = json.load(handle)
 
 issue_type = payload.get("issue_type", "user_story")
+epic_children = payload.get("stories") or payload.get("user_stories") or payload.get("child_issues") or payload.get("breakdown")
 checks = []
 
 checks.append({"name": "issue_type_identified", "pass": issue_type in {"epic", "user_story", "task", "bug"}})
@@ -54,7 +55,8 @@ elif issue_type == "user_story":
 else:
     checks.append({"name": "epic_present", "pass": present(payload.get("problem")) or present(payload.get("summary")) or present(payload.get("title"))})
     checks.append({"name": "scope_present", "pass": present(payload.get("scope")) or present(payload.get("goal")) or present(payload.get("objective")) or present(payload.get("value"))})
-    checks.append({"name": "breakdown_present", "pass": present(payload.get("acceptance_criteria"))})
+    checks.append({"name": "breakdown_present", "pass": present(epic_children) or present(payload.get("acceptance_criteria"))})
+    checks.append({"name": "epic_children_present", "pass": present(epic_children)})
     checks.append({"name": "success_criteria_present", "pass": present(payload.get("success_criteria")) or present(payload.get("acceptance_criteria"))})
 
 if present(payload.get("dependencies")):

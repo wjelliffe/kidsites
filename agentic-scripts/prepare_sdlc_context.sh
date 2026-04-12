@@ -4,8 +4,8 @@ set -euo pipefail
 mode="${1:-}"
 input_path="${2:-}"
 
-if [[ "${mode}" != "issue" && "${mode}" != "request" ]]; then
-  echo "usage: $0 <issue|request> [input-json-path]" >&2
+if [[ "${mode}" != "issue" && "${mode}" != "request" && "${mode}" != "minimal" ]]; then
+  echo "usage: $0 <issue|request|minimal> [input-json-path]" >&2
   exit 1
 fi
 
@@ -25,7 +25,12 @@ if [[ "${mode}" == "issue" ]]; then
   fi
 fi
 
-INPUT_MODE="${mode}" INPUT_PATH="${input_path}" TMP_DIR="${tmp_dir}" python3 <<'PY'
+raw_request=""
+if [[ "${mode}" == "request" || "${mode}" == "minimal" ]]; then
+  raw_request="$(cat)"
+fi
+
+INPUT_MODE="${mode}" INPUT_PATH="${input_path}" TMP_DIR="${tmp_dir}" RAW_REQUEST="${raw_request}" python3 <<'PY'
 import json
 import os
 import re
@@ -65,8 +70,8 @@ if mode == "issue":
         "risks": normalized.get("risks", []),
         "source_issue_path": os.environ["INPUT_PATH"],
     }
-else:
-    raw_request = sys.stdin.read().strip()
+elif mode == "request":
+    raw_request = os.environ.get("RAW_REQUEST", "").strip()
     if not raw_request:
       raise SystemExit("request mode requires stdin input")
     slug = slugify(raw_request[:80])
@@ -84,6 +89,19 @@ else:
         "acceptance_criteria": [],
         "test_expectations": [],
         "risks": [],
+    }
+else:
+    raw_request = os.environ.get("RAW_REQUEST", "").strip()
+    if not raw_request:
+      raise SystemExit("minimal mode requires stdin input")
+    title = raw_request.splitlines()[0][:120]
+    context = {
+        "schema_version": 1,
+        "context_type": "minimal",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "slug": slugify(title or raw_request[:80]),
+        "title": title,
+        "summary": raw_request,
     }
 
 output_path = os.path.join(tmp_dir, f"sdlc-context-{context['slug']}.json")

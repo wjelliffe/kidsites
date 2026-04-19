@@ -1,6 +1,6 @@
 # SDLC Do
 
-Use this command for full delivery from plan through closeout with exactly two approval gates.
+Use this command for delivery from plan through closeout with a lightweight path for simple work and exactly two approval gates when the flow escalates.
 
 ## Use It When
 
@@ -34,29 +34,50 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 
 ## Flow
 
-1. Normalize the work context into `.tmp`.
-2. Build the plan in the command.
-3. Gate 1 plan must include:
+1. Propose the smallest meaningful implementation plan before touching the codebase.
+2. If the plan is trivial and clearly correct:
+   - proceed directly to implementation
+   - do not require Gate 1
+3. If the plan is unclear, risky, or non-trivial:
+   - normalize the work context into `.tmp`
+   - build the plan in the command
+4. Gate 1 plan must include:
    - intended files or areas to modify
    - test strategy first
    - whether TDD is required, preferred, or not practical
    - verification plan
    - risks, assumptions, and dependencies
-4. Prepare `inplace` or `worktree` execution context.
-5. Write tests first whenever practical, then implement.
-6. Run checks and tests.
-7. Perform a code review pass in the command.
-8. If checks, tests, or review fail, loop back through implementation.
-9. Summarize diff and validate DOD.
-10. Gate 2 presents exactly:
+5. For issue-based epic execution:
+   - treat the parent epic as orchestration-only
+   - execute the child story issues
+   - in `mode=worktree`, use one child worktree per child execution unit
+6. Prepare `inplace` or `worktree` execution context for the actual execution unit.
+7. Write tests first whenever practical, then implement.
+8. Run checks and tests.
+9. Perform a code review pass in the command.
+10. If checks, tests, or review fail, loop back through implementation.
+11. Summarize diff and validate DOD only when the flow escalated.
+12. Gate 2 presents exactly:
    - `Commit and merge.`
    - `Commit and push up as Pull Request.`
-11. Finalize with the runtime script.
+13. Finalize with `finalize_work.sh`.
+   - for issue-based work, use `finalize_work.sh` whenever the user asks to commit/finalize, including the lightweight path
+   - "closing comment" means a commit or PR closing footer such as `Fixes #<issue>`, not a separate GitHub issue comment
+   - do not call `gh issue close` or `gh issue comment` unless the user explicitly asks for that
+
+Example:
+- user says `commit with a closing comment`
+- create the commit with `Fixes #<issue>` in the commit body
+- do not post a GitHub comment or close the issue separately
 
 ## Rules
 
-- Exactly two approvals only.
+- Use Gate 1 only when the flow escalates.
+- Use at most two approvals: Gate 1 when escalated, and Gate 2 for finalization.
 - `inplace` means branch from trunk in the current worktree.
 - `worktree` means isolated branch/worktree for parallel work.
 - Planning, TDD judgment, review, and failure interpretation stay in the command.
 - Deterministic execution belongs in `<workspace-root>/agentic-scripts`.
+- For issue-based work, finalization goes through `finalize_work.sh` whenever the user asks to commit/finalize.
+- "Closing comment" means a commit-body or PR-body closing footer such as `Fixes #<issue>` or `Closes #<issue>`.
+- Do not call `gh issue close`, `gh issue comment`, or otherwise close/comment on the GitHub issue unless the user explicitly asks for that.

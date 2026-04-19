@@ -3,9 +3,10 @@ set -euo pipefail
 
 work_key="${1:-}"
 mode="${2:-inplace}"
+context_path="${3:-}"
 
 if [[ -z "$work_key" ]]; then
-  echo "usage: $0 <work-key> [inplace|worktree]" >&2
+  echo "usage: $0 <work-key> [inplace|worktree] [context-json]" >&2
   exit 1
 fi
 
@@ -21,6 +22,11 @@ fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
+
+if [[ -n "${context_path}" && ! -f "${context_path}" ]]; then
+  echo "context file not found: ${context_path}" >&2
+  exit 1
+fi
 
 slug="$(
 WORK_KEY="${work_key}" python3 <<'PY'
@@ -53,6 +59,52 @@ PY
 )"
 
 cd "${repo_root}"
+
+register_child_worktree() {
+  local context_path="$1"
+  local branch_name="$2"
+  local worktree_path="$3"
+
+  [[ -n "${context_path}" ]] || return 0
+
+  CONTEXT_PATH="${context_path}" BRANCH_NAME="${branch_name}" WORKTREE_PATH="${worktree_path}" python3 <<'PY'
+import json
+import os
+from datetime import datetime, timezone
+
+with open(os.environ["CONTEXT_PATH"], "r", encoding="utf-8") as handle:
+    context = json.load(handle)
+
+registry_path = context.get("epic_registry_path")
+if context.get("execution_role") != "child_issue" or not registry_path:
+    raise SystemExit(0)
+
+os.makedirs(os.path.dirname(registry_path), exist_ok=True)
+if os.path.exists(registry_path):
+    with open(registry_path, "r", encoding="utf-8") as handle:
+        registry = json.load(handle)
+else:
+    registry = {"schema_version": 1, "entries": []}
+
+entry = {
+    "issue_number": context.get("issue_number"),
+    "closing_issue_number": context.get("closing_issue_number"),
+    "title": context.get("title"),
+    "branch": os.environ["BRANCH_NAME"],
+    "path": os.environ["WORKTREE_PATH"],
+    "status": "active",
+    "registered_at": datetime.now(timezone.utc).isoformat(),
+}
+
+entries = [item for item in registry.get("entries", []) if item.get("path") != entry["path"] and item.get("branch") != entry["branch"]]
+entries.append(entry)
+registry["entries"] = entries
+
+with open(registry_path, "w", encoding="utf-8") as handle:
+    json.dump(registry, handle, indent=2, sort_keys=True)
+    handle.write("\n")
+PY
+}
 
 if [[ "${mode}" == "inplace" ]]; then
   current_branch="$(git branch --show-current)"
@@ -113,3 +165,5 @@ print(json.dumps({
     "trunk_branch": os.environ["TRUNK_BRANCH"],
 }))
 PY
+
+register_child_worktree "${context_path}" "${branch_name}" "${worktree_path}"

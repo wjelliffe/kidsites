@@ -53,6 +53,18 @@ if mode == "issue":
     normalized = source.get("normalized", {})
     title = normalized.get("title") or source.get("issue", {}).get("title") or "Untitled issue"
     slug = normalized.get("slug") or slugify(title)
+    parent_issue = normalized.get("parent_issue")
+    sub_issues = normalized.get("sub_issues") or []
+    closing_issue_number = source.get("issue", {}).get("number")
+    execution_role = "standalone_issue"
+    epic_registry_path = None
+    if sub_issues:
+        closing_issue_number = None
+        execution_role = "epic"
+        epic_registry_path = os.path.join(tmp_dir, f"sdlc-epic-{source.get('issue', {}).get('number')}-worktrees.json")
+    elif isinstance(parent_issue, dict) and parent_issue.get("number"):
+        execution_role = "child_issue"
+        epic_registry_path = os.path.join(tmp_dir, f"sdlc-epic-{parent_issue.get('number')}-worktrees.json")
     context = {
         "schema_version": 1,
         "context_type": "issue",
@@ -60,6 +72,11 @@ if mode == "issue":
         "slug": slug,
         "title": title,
         "issue_number": source.get("issue", {}).get("number"),
+        "closing_issue_number": closing_issue_number,
+        "execution_role": execution_role,
+        "parent_issue": parent_issue,
+        "sub_issues": sub_issues,
+        "epic_registry_path": epic_registry_path,
         "summary": normalized.get("objective") or normalized.get("problem") or title,
         "problem": normalized.get("problem", ""),
         "scope": normalized.get("scope", ""),
@@ -82,6 +99,7 @@ elif mode == "request":
         "slug": slug,
         "title": raw_request.splitlines()[0][:120],
         "summary": raw_request,
+        "execution_role": "request",
         "problem": "",
         "scope": "",
         "dependencies": [],
@@ -89,6 +107,9 @@ elif mode == "request":
         "acceptance_criteria": [],
         "test_expectations": [],
         "risks": [],
+        "parent_issue": None,
+        "sub_issues": [],
+        "epic_registry_path": None,
     }
 else:
     raw_request = os.environ.get("RAW_REQUEST", "").strip()
@@ -102,6 +123,11 @@ else:
         "slug": slugify(title or raw_request[:80]),
         "title": title,
         "summary": raw_request,
+        "closing_issue_number": None,
+        "execution_role": "minimal",
+        "parent_issue": None,
+        "sub_issues": [],
+        "epic_registry_path": None,
     }
 
 output_path = os.path.join(tmp_dir, f"sdlc-context-{context['slug']}.json")

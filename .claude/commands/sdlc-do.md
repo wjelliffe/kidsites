@@ -1,22 +1,34 @@
 # SDLC Do
 
-Use this command for delivery from plan through closeout with a lightweight path for simple work and exactly two approval gates when the flow escalates.
+Execute exactly one implementation unit from plan through finalization.
 
-## Use It When
+## Scope Constraints
 
-- `/sdlc-do #62`
-- `/sdlc-do implement this request`
-- `/sdlc-do #62 mode=worktree`
-- `/sdlc-do #62 mode=inplace`
+This skill supports:
+- one GitHub issue
+- one direct request
+
+This skill does NOT support:
+- epics
+- parent issues with children
+- multiple issues
+- orchestration
+- sub-agents
+
+If an epic or multiple issues are detected, STOP and say:
+
+`This skill only supports single issue execution. Epics are not supported.`
+
+---
 
 ## Inputs
 
-- GitHub issue number or direct freeform request
-- Execution mode is optional. Default to `inplace`. Use `worktree` only when the user explicitly wants isolation.
+- GitHub issue OR direct request
+- Optional: `mode=inplace` (default) or `mode=worktree`
 
-Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
+Resolve `<workspace-root>` via: --- git rev-parse –show-toplevel
 
-## Runtime References
+## Runtime Scripts
 
 - `get_issue.sh`
 - `prepare_sdlc_context.sh`
@@ -27,57 +39,124 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 - `validate_dod.sh`
 - `finalize_work.sh`
 
+---
+
 ## Gates
 
-- Gate 1: approve the plan.
-- Gate 2: approve the finished work before finalization.
+- **Gate 1**: Plan approval (always required)
+- **Gate 2**: Final approval before commit
+
+---
 
 ## Flow
 
-1. Propose the smallest meaningful implementation plan before touching the codebase.
-2. If the plan is trivial and clearly correct:
-   - proceed directly to implementation
-   - do not require Gate 1
-3. If the plan is unclear, risky, or non-trivial:
-   - normalize the work context into `.tmp`
-   - build the plan in the command
-4. Gate 1 plan must include:
-   - intended files or areas to modify
-   - test strategy first
-   - whether TDD is required, preferred, or not practical
-   - verification plan
-   - risks, assumptions, and dependencies
-5. For issue-based epic execution:
-   - treat the parent epic as orchestration-only
-   - execute the child story issues
-   - in `mode=worktree`, use one child worktree per child execution unit
-6. Prepare `inplace` or `worktree` execution context for the actual execution unit.
-7. Write tests first whenever practical, then implement.
-8. Run checks and tests.
-9. Perform a code review pass in the command.
-10. If checks, tests, or review fail, loop back through implementation.
-11. Summarize diff and validate DOD only when the flow escalated.
-12. Gate 2 presents exactly:
-   - `Commit and merge.`
-   - `Commit and push up as Pull Request.`
-13. Finalize with `finalize_work.sh`.
-   - for issue-based work, use `finalize_work.sh` whenever the user asks to commit/finalize, including the lightweight path
-   - "closing comment" means a commit or PR closing footer such as `Fixes #<issue>`, not a separate GitHub issue comment
-   - do not call `gh issue close` or `gh issue comment` unless the user explicitly asks for that
+### 0. Load Context
 
-Example:
-- user says `commit with a closing comment`
-- create the commit with `Fixes #<issue>` in the commit body
-- do not post a GitHub comment or close the issue separately
+If input is an issue:
+- run `get_issue.sh`
+
+Then:
+- run `prepare_sdlc_context.sh`
+
+If either fails:
+- STOP and report failure
+
+---
+
+### 1. Plan (Gate 1)
+
+Produce a minimal, execution-focused plan:
+
+- files to modify
+- intended changes
+- test strategy FIRST
+- TDD stance (required / preferred / not practical)
+- verification plan
+- risks / assumptions
+
+Then stop and request approval.
+
+---
+
+### 2. Execution Setup
+
+If `mode=worktree`:
+- run `start_worktree.sh`
+
+If setup fails:
+- STOP and report failure
+
+---
+
+### 3. Implementation
+
+- write tests first when practical
+- implement changes
+- keep scope tightly bound to plan
+
+---
+
+### 4. Validation
+
+Run:
+- `run_checks.sh`
+- `run_tests.sh`
+
+If either fails:
+- STOP and report failure
+
+---
+
+### 5. Diff + DoD
+
+Run:
+- `summarize_diff.sh`
+- `validate_dod.sh`
+
+If either fails:
+- STOP and report failure
+
+---
+
+### 6. Gate 2
+
+Present exactly:
+
+- `Commit and merge.`
+- `Commit and push up as Pull Request.`
+
+Wait for user selection.
+
+---
+
+### 7. Finalization
+
+Run:
+- `finalize_work.sh`
+
+Rules:
+- include closing footer if issue-based (`Fixes #<issue>`)
+- do NOT manually run git commands
+- do NOT call GitHub APIs directly
+
+If finalization fails:
+- STOP and report failure
+
+---
 
 ## Rules
 
-- Use Gate 1 only when the flow escalates.
-- Use at most two approvals: Gate 1 when escalated, and Gate 2 for finalization.
-- `inplace` means branch from trunk in the current worktree.
-- `worktree` means isolated branch/worktree for parallel work.
-- Planning, TDD judgment, review, and failure interpretation stay in the command.
-- Deterministic execution belongs in `<workspace-root>/agentic-scripts`.
-- For issue-based work, finalization goes through `finalize_work.sh` whenever the user asks to commit/finalize.
-- "Closing comment" means a commit-body or PR-body closing footer such as `Fixes #<issue>` or `Closes #<issue>`.
-- Do not call `gh issue close`, `gh issue comment`, or otherwise close/comment on the GitHub issue unless the user explicitly asks for that.
+- Always require Gate 1 and Gate 2
+- No retry loops: fail once → stop
+- No epic handling
+- No child issue execution
+- No sub-agents
+- No orchestration
+- Keep planning minimal
+- Keep execution tight
+- Keep validation lightweight
+- Deterministic work belongs in scripts only
+- Do not broaden scope beyond the issue
+- Do not modify unrelated files
+- Do not continue after any failure
+- Do not auto-retry anything

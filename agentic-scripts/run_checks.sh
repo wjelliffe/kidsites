@@ -45,7 +45,11 @@ print(json.dumps(ordered))
 PY
 )"
 
-mapfile -t checks < <(CHECKS_JSON="${checks_json}" python3 <<'PY'
+declare -a checks=()
+while IFS= read -r entry; do
+  [[ -n "${entry}" ]] || continue
+  checks+=("${entry}")
+done < <(CHECKS_JSON="${checks_json}" python3 <<'PY'
 import json
 import os
 
@@ -68,27 +72,28 @@ run_script() {
   esac
 }
 
-for check_name in "${checks[@]}"; do
-  output_file="$(mktemp)"
-  start_time="$(python3 - <<'PY'
+if [[ "${#checks[@]}" -gt 0 ]]; then
+  for check_name in "${checks[@]}"; do
+    output_file="$(mktemp)"
+    start_time="$(python3 - <<'PY'
 import time
 print(time.time())
 PY
 )"
-  if run_script "${check_name}" >"${output_file}" 2>&1; then
-    exit_code=0
-    status="pass"
-  else
-    exit_code=$?
-    status="fail"
-    overall_status="fail"
-  fi
-  end_time="$(python3 - <<'PY'
+    if run_script "${check_name}" >"${output_file}" 2>&1; then
+      exit_code=0
+      status="pass"
+    else
+      exit_code=$?
+      status="fail"
+      overall_status="fail"
+    fi
+    end_time="$(python3 - <<'PY'
 import time
 print(time.time())
 PY
 )"
-  results+=("$(CHECK_NAME="${check_name}" STATUS="${status}" EXIT_CODE="${exit_code}" OUTPUT_FILE="${output_file}" START_TIME="${start_time}" END_TIME="${end_time}" python3 <<'PY'
+    results+=("$(CHECK_NAME="${check_name}" STATUS="${status}" EXIT_CODE="${exit_code}" OUTPUT_FILE="${output_file}" START_TIME="${start_time}" END_TIME="${end_time}" python3 <<'PY'
 import json
 import os
 
@@ -106,8 +111,9 @@ payload = {
 print(json.dumps(payload))
 PY
 )")
-  rm -f "${output_file}"
-done
+    rm -f "${output_file}"
+  done
+fi
 
 RESULT_LINES="$(printf '%s\n' "${results[@]:-}")" OVERALL_STATUS="${overall_status}" python3 <<'PY'
 import json

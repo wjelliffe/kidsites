@@ -34,7 +34,6 @@ INPUT_MODE="${mode}" INPUT_PATH="${input_path}" TMP_DIR="${tmp_dir}" RAW_REQUEST
 import json
 import os
 import re
-import sys
 from datetime import datetime, timezone
 
 
@@ -51,20 +50,36 @@ if mode == "issue":
     with open(os.environ["INPUT_PATH"], "r", encoding="utf-8") as handle:
         source = json.load(handle)
     normalized = source.get("normalized", {})
+    issues = source.get("issues") or ([source.get("issue")] if source.get("issue") else [])
+    issue_numbers = [item.get("number") for item in issues if isinstance(item, dict) and item.get("number") is not None]
+    grouped_issue_numbers = normalized.get("issue_numbers") or issue_numbers
+    grouped_issues = normalized.get("issues") or []
+    is_issue_group = len(grouped_issue_numbers) > 1
+    if is_issue_group and any(item.get("sub_issues") for item in grouped_issues if isinstance(item, dict)):
+        raise SystemExit("issue groups cannot include parent issues with child issues")
+
     title = normalized.get("title") or source.get("issue", {}).get("title") or "Untitled issue"
     slug = normalized.get("slug") or slugify(title)
     parent_issue = normalized.get("parent_issue")
+    parent_issues = normalized.get("parent_issues") or []
     sub_issues = normalized.get("sub_issues") or []
     closing_issue_number = source.get("issue", {}).get("number")
+    closing_issue_numbers = None
     execution_role = "standalone_issue"
     epic_registry_path = None
-    if sub_issues:
+
+    if is_issue_group:
+        closing_issue_number = None
+        closing_issue_numbers = grouped_issue_numbers
+        execution_role = "issue_group"
+    elif sub_issues:
         closing_issue_number = None
         execution_role = "epic"
         epic_registry_path = os.path.join(tmp_dir, f"sdlc-epic-{source.get('issue', {}).get('number')}-worktrees.json")
     elif isinstance(parent_issue, dict) and parent_issue.get("number"):
         execution_role = "child_issue"
         epic_registry_path = os.path.join(tmp_dir, f"sdlc-epic-{parent_issue.get('number')}-worktrees.json")
+
     context = {
         "schema_version": 1,
         "context_type": "issue",
@@ -72,9 +87,12 @@ if mode == "issue":
         "slug": slug,
         "title": title,
         "issue_number": source.get("issue", {}).get("number"),
+        "issue_numbers": grouped_issue_numbers,
         "closing_issue_number": closing_issue_number,
+        "closing_issue_numbers": closing_issue_numbers,
         "execution_role": execution_role,
         "parent_issue": parent_issue,
+        "parent_issues": parent_issues,
         "sub_issues": sub_issues,
         "epic_registry_path": epic_registry_path,
         "summary": normalized.get("objective") or normalized.get("problem") or title,
@@ -90,7 +108,7 @@ if mode == "issue":
 elif mode == "request":
     raw_request = os.environ.get("RAW_REQUEST", "").strip()
     if not raw_request:
-      raise SystemExit("request mode requires stdin input")
+        raise SystemExit("request mode requires stdin input")
     slug = slugify(raw_request[:80])
     context = {
         "schema_version": 1,
@@ -114,7 +132,7 @@ elif mode == "request":
 else:
     raw_request = os.environ.get("RAW_REQUEST", "").strip()
     if not raw_request:
-      raise SystemExit("minimal mode requires stdin input")
+        raise SystemExit("minimal mode requires stdin input")
     title = raw_request.splitlines()[0][:120]
     context = {
         "schema_version": 1,

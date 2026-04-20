@@ -33,7 +33,7 @@ mkdir -p "${tmp_dir}"
 
 repo_json="$(gh repo view --json nameWithOwner)"
 raw_json="$(
-  python3 <<'PY' "${issue_numbers[@]}"
+  python3 - "${issue_numbers[@]}" <<'PY'
 import json
 import subprocess
 import sys

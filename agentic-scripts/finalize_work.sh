@@ -221,6 +221,24 @@ commit_sha="$(git rev-parse HEAD)"
 
 if [[ "${mode}" == "merge" ]]; then
   worktree_removed="false"
+
+  # FAST PATH: already on trunk (in-place /implement flow)
+  if [[ "${current_branch}" == "${trunk_branch}" ]]; then
+    COMMIT_SHA="${commit_sha}" TRUNK_BRANCH="${trunk_branch}" MERGED_BRANCH="${current_branch}" WORKTREE_REMOVED="false" python3 <<'PY'
+import json
+import os
+print(json.dumps({
+    "ok": True,
+    "mode": "merge",
+    "commit": os.environ["COMMIT_SHA"],
+    "trunk_branch": os.environ["TRUNK_BRANCH"],
+    "merged_branch": os.environ["MERGED_BRANCH"],
+    "worktree_removed": False,
+}))
+PY
+    exit 0
+  fi
+
   if [[ "${execution_role}" == "child_issue" ]]; then
     update_registry_entry "${epic_registry_path}" "${current_branch}" "${repo_root}" "merged"
   fi

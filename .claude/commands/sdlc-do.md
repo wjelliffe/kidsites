@@ -136,10 +136,29 @@ If either fails:
 
 Present exactly:
 
+- `Execute code review.`
 - `Commit and merge.`
 - `Commit and push up as Pull Request.`
 
 Wait for user selection.
+
+If the user selects `Execute code review.`, invoke `/code-review`.
+
+If `/code-review` returns `APPROVE`, present exactly:
+
+- `Commit and merge.`
+- `Commit and push up as Pull Request.`
+
+If `/code-review` returns `BLOCKERS`, stop before finalization and iterate with the user until the priority review findings are fixed.
+
+After fixing review blockers:
+- rerun validation as needed
+- rerun Diff + DoD if needed
+- rerun `/code-review` if appropriate
+- then present exactly:
+
+- `Commit and merge.`
+- `Commit and push up as Pull Request.`
 
 ---
 
